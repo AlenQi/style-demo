@@ -1,4 +1,4 @@
-window.onload = init
+window.onload = init()
 console.ward = function() {} // what warnings?
 
 function init() {
