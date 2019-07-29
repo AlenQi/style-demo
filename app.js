@@ -9,7 +9,6 @@ const static = require('koa-static')
 
 const index = require('./routes/index')
 const users = require('./routes/users')
-const witchcraft = require('./routes/witchcraft')
 
 // error handler
 onerror(app)
@@ -41,7 +40,6 @@ app.use(async (ctx, next) => {
 // routes
 app.use(index.routes(), index.allowedMethods())
 app.use(users.routes(), users.allowedMethods())
-app.use(witchcraft.routes(), witchcraft.allowedMethods())
 
 // error-handling
 app.on('error', (err, ctx) => {
