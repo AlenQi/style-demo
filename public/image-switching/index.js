@@ -1,11 +1,70 @@
 window.onload = init()
 console.ward = function() {} // what warnings?
 
+////////////////////
+// UTILS
+////////////////////
+
+var utils = {
+  extend: function(dst, src) {
+    for (var key in src) {
+      dst[key] = src[key]
+    }
+
+    return dst
+  },
+  randSign: function() {
+    return Math.random() > 0.5 ? 1 : -1
+  },
+  ease: function(ease, t, b, c, d) {
+    return b + ease.getRatio(t / d) * c
+  },
+  fibSpherePoint: (function() {
+    var vec = { x: 0, y: 0, z: 0 }
+    var G = Math.PI * (3 - Math.sqrt(5))
+
+    return function(i, n, radius) {
+      var step = 2.0 / n
+      var r, phi
+
+      vec.y = i * step - 1 + step * 0.5
+      r = Math.sqrt(1 - vec.y * vec.y)
+      phi = i * G
+      vec.x = Math.cos(phi) * r
+      vec.z = Math.sin(phi) * r
+
+      radius = radius || 1
+
+      vec.x *= radius
+      vec.y *= radius
+      vec.z *= radius
+
+      return vec
+    }
+  })(),
+  spherePoint: (function() {
+    return function(u, v) {
+      u === undefined && (u = Math.random())
+      v === undefined && (v = Math.random())
+
+      var theta = 2 * Math.PI * u
+      var phi = Math.acos(2 * v - 1)
+
+      var vec = {}
+      vec.x = Math.sin(phi) * Math.cos(theta)
+      vec.y = Math.sin(phi) * Math.sin(theta)
+      vec.z = Math.cos(phi)
+
+      return vec
+    }
+  })(),
+}
+
 function init() {
   var root = new THREERoot({
     createCameraControls: !true,
     antialias: window.devicePixelRatio === 1,
-    fov: 80
+    fov: 80,
   })
 
   root.renderer.setClearColor(0x000000, 0)
@@ -22,7 +81,7 @@ function init() {
     'https://s3-us-west-2.amazonaws.com/s.cdpn.io/175711/winter.jpg',
     function(img) {
       slide.setImage(img)
-    }
+    },
   )
   root.scene.add(slide)
 
@@ -33,7 +92,7 @@ function init() {
     'https://s3-us-west-2.amazonaws.com/s.cdpn.io/175711/spring.jpg',
     function(img) {
       slide2.setImage(img)
-    }
+    },
   )
 
   root.scene.add(slide2)
@@ -123,7 +182,7 @@ function Slide(width, height, animationPhase) {
       -width * 0.5,
       width * 0.5,
       0.0,
-      maxDelayX
+      maxDelayX,
     )
     var delayY
 
@@ -133,7 +192,7 @@ function Slide(width, height, animationPhase) {
         0,
         height * 0.5,
         0.0,
-        maxDelayY
+        maxDelayY,
       )
     } else {
       delayY = THREE.Math.mapLinear(
@@ -141,7 +200,7 @@ function Slide(width, height, animationPhase) {
         0,
         height * 0.5,
         maxDelayY,
-        0.0
+        0.0,
       )
     }
 
@@ -189,13 +248,13 @@ function Slide(width, height, animationPhase) {
       shading: THREE.FlatShading,
       side: THREE.DoubleSide,
       uniforms: {
-        uTime: { type: 'f', value: 0 }
+        uTime: { type: 'f', value: 0 },
       },
       shaderFunctions: [
         THREE.BAS.ShaderChunk['cubic_bezier'],
         //THREE.BAS.ShaderChunk[(animationPhase === 'in' ? 'ease_out_cubic' : 'ease_in_cubic')],
         THREE.BAS.ShaderChunk['ease_in_out_cubic'],
-        THREE.BAS.ShaderChunk['quaternion_rotation']
+        THREE.BAS.ShaderChunk['quaternion_rotation'],
       ],
       shaderParameters: [
         'uniform float uTime;',
@@ -203,25 +262,25 @@ function Slide(width, height, animationPhase) {
         'attribute vec3 aStartPosition;',
         'attribute vec3 aControl0;',
         'attribute vec3 aControl1;',
-        'attribute vec3 aEndPosition;'
+        'attribute vec3 aEndPosition;',
       ],
       shaderVertexInit: [
         'float tDelay = aAnimation.x;',
         'float tDuration = aAnimation.y;',
         'float tTime = clamp(uTime - tDelay, 0.0, tDuration);',
-        'float tProgress = ease(tTime, 0.0, 1.0, tDuration);'
+        'float tProgress = ease(tTime, 0.0, 1.0, tDuration);',
         //'float tProgress = tTime / tDuration;'
       ],
       shaderTransformPosition: [
         animationPhase === 'in'
           ? 'transformed *= tProgress;'
           : 'transformed *= 1.0 - tProgress;',
-        'transformed += cubicBezier(aStartPosition, aControl0, aControl1, aEndPosition, tProgress);'
-      ]
+        'transformed += cubicBezier(aStartPosition, aControl0, aControl1, aEndPosition, tProgress);',
+      ],
     },
     {
-      map: new THREE.Texture()
-    }
+      map: new THREE.Texture(),
+    },
   )
 
   THREE.Mesh.call(this, geometry, material)
@@ -236,7 +295,7 @@ Object.defineProperty(Slide.prototype, 'time', {
   },
   set: function(v) {
     this.material.uniforms['uTime'].value = v
-  }
+  },
 })
 
 Slide.prototype.setImage = function(image) {
@@ -249,7 +308,7 @@ Slide.prototype.transition = function() {
     this,
     3.0,
     { time: 0.0 },
-    { time: this.totalDuration, ease: Power0.easeInOut }
+    { time: this.totalDuration, ease: Power0.easeInOut },
   )
 }
 
@@ -290,14 +349,14 @@ function THREERoot(params) {
       zNear: 10,
       zFar: 100000,
 
-      createCameraControls: true
+      createCameraControls: true,
     },
-    params
+    params,
   )
 
   this.renderer = new THREE.WebGLRenderer({
     antialias: params.antialias,
-    alpha: true
+    alpha: true,
   })
   this.renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1))
   document
@@ -308,7 +367,7 @@ function THREERoot(params) {
     params.fov,
     window.innerWidth / window.innerHeight,
     params.zNear,
-    params.zfar
+    params.zfar,
   )
 
   this.scene = new THREE.Scene()
@@ -316,7 +375,7 @@ function THREERoot(params) {
   if (params.createCameraControls) {
     this.controls = new THREE.OrbitControls(
       this.camera,
-      this.renderer.domElement
+      this.renderer.domElement,
     )
   }
 
@@ -345,66 +404,7 @@ THREERoot.prototype = {
     this.camera.updateProjectionMatrix()
 
     this.renderer.setSize(window.innerWidth, window.innerHeight)
-  }
-}
-
-////////////////////
-// UTILS
-////////////////////
-
-var utils = {
-  extend: function(dst, src) {
-    for (var key in src) {
-      dst[key] = src[key]
-    }
-
-    return dst
   },
-  randSign: function() {
-    return Math.random() > 0.5 ? 1 : -1
-  },
-  ease: function(ease, t, b, c, d) {
-    return b + ease.getRatio(t / d) * c
-  },
-  fibSpherePoint: (function() {
-    var vec = { x: 0, y: 0, z: 0 }
-    var G = Math.PI * (3 - Math.sqrt(5))
-
-    return function(i, n, radius) {
-      var step = 2.0 / n
-      var r, phi
-
-      vec.y = i * step - 1 + step * 0.5
-      r = Math.sqrt(1 - vec.y * vec.y)
-      phi = i * G
-      vec.x = Math.cos(phi) * r
-      vec.z = Math.sin(phi) * r
-
-      radius = radius || 1
-
-      vec.x *= radius
-      vec.y *= radius
-      vec.z *= radius
-
-      return vec
-    }
-  })(),
-  spherePoint: (function() {
-    return function(u, v) {
-      u === undefined && (u = Math.random())
-      v === undefined && (v = Math.random())
-
-      var theta = 2 * Math.PI * u
-      var phi = Math.acos(2 * v - 1)
-
-      var vec = {}
-      vec.x = Math.sin(phi) * Math.cos(theta)
-      vec.y = Math.sin(phi) * Math.sin(theta)
-      vec.z = Math.cos(phi)
-
-      return vec
-    }
-  })()
 }
 
 function createTweenScrubber(tween, seekSpeed) {
